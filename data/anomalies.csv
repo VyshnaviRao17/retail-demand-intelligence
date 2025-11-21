@@ -1,0 +1,3 @@
+date,store,sku,actual,expected,reason
+2024-01-02,1,101,50,25,Spike due to promotion
+2024-01-05,1,101,10,22,Drop due to low footfall
