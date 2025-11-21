@@ -1,5 +1,3 @@
-# src/predict.py
-
 import pandas as pd
 import pickle
 from datetime import timedelta
