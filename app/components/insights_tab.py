@@ -2,10 +2,28 @@ import streamlit as st
 import pandas as pd
 from components.ui_components import metric_card
 
+
+# ---------------------------
+# CACHED HELPERS
+# ---------------------------
+
+@st.cache_data(show_spinner=False)
+def _load_unstable_skus():
+    """Cached static table for insights."""
+    return pd.DataFrame({
+        "SKU": [101, 102, 105, 110],
+        "Instability Score": [0.91, 0.83, 0.79, 0.74]
+    })
+
+
+# ---------------------------
+# MAIN RENDER FUNCTION
+# ---------------------------
+
 def render_insights_tab():
     st.subheader("📊 Insights & KPIs")
 
-    # KPI Cards
+    # KPI cards – lightweight, no caching needed
     c1, c2, c3 = st.columns(3)
 
     with c1:
@@ -19,14 +37,13 @@ def render_insights_tab():
 
     st.markdown("---")
 
-    # Table: Unstable SKUs
+    # ---------------------------
+    # UNSTABLE SKU TABLE (CACHED)
+    # ---------------------------
     st.markdown("### 🔥 Top Unstable SKUs")
 
-    data = pd.DataFrame({
-        "SKU": [101, 102, 105, 110],
-        "Instability Score": [0.91, 0.83, 0.79, 0.74]
-    })
+    unstable_df = _load_unstable_skus()
 
     st.markdown('<div class="fade-in">', unsafe_allow_html=True)
-    st.table(data)
+    st.table(unstable_df)
     st.markdown('</div>', unsafe_allow_html=True)

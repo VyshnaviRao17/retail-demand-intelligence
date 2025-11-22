@@ -2,78 +2,152 @@
 import streamlit as st
 import time
 
+# -------------------------------------------------
+# GLOBAL CSS INJECTION  (runs once safely via cache)
+# -------------------------------------------------
+
+@st.cache_resource
 def inject_global_css():
-    """Call once at app start to inject global styles/animations."""
+    """Inject global CSS only once per session for performance."""
     css = """
     <style>
-    /* page background subtle */
-    .reportview-container .main {
-        transition: background-color 300ms ease;
+
+    /* Root variables (easy theme switching) */
+    :root {
+        --primary-text: #0f1724;
+        --background-light: #ffffff;
+        --background-dark: #0f1724;
+        --text-light: #ffffff;
     }
 
-    /* header animation already exists; add subtle parallax */
-    .animated-header {
-        will-change: transform, opacity;
+    /* Smooth transitions */
+    .stApp, .main, .block-container {
+        transition: background-color 300ms ease, color 300ms ease;
     }
 
-    /* fade-in for charts & sections */
+    /* Fade-in animation used across app */
     .fade-in {
         opacity: 0;
         transform: translateY(6px);
         animation: fadeInUp 0.55s ease forwards;
+        will-change: opacity, transform;
     }
     @keyframes fadeInUp {
         to { opacity: 1; transform: translateY(0); }
     }
 
-    /* subtle tab content container */
+    /* Card style */
+    .sidebar-card {
+        background: rgba(255,255,255,0.03);
+        border-radius: 12px;
+        padding: 12px;
+        margin-bottom: 14px;
+    }
+
+    /* Tabs padding */
     .stTabs [role="tabpanel"] {
-        padding-top: 6px;
+        padding-top: 6px !important;
+    }
+
+    /* Smooth chart container */
+    .chart-container {
         transition: opacity 250ms ease;
     }
 
-    /* sidebar card rounded */
-    .sidebar-card {
-        background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+    /* Metric card styling (works with light/dark mode) */
+    .metric-card {
         border-radius: 12px;
-        padding: 8px;
-        margin-bottom: 12px;
+        padding: 14px 18px;
+        background: var(--background-light);
+        color: var(--primary-text);
+        box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+        transition: background 250ms ease, color 250ms ease;
     }
 
-    /* small spinner center */
-    .centered-spinner { display:flex; justify-content:center; align-items:center; padding:18px; }
+    .metric-title { font-size: 14px; font-weight: 600; }
+    .metric-value { font-size: 22px; font-weight: 700; }
 
-    /* dark override (applied via injecting another block when dark) */
+    /* General text and background */
+    .main, .block-container {
+        background-color: var(--background-light);
+        color: var(--primary-text);
+    }
+
     </style>
     """
     st.markdown(css, unsafe_allow_html=True)
 
-def show_loading(message="Loading…", seconds=0.6):
-    """Simple visual spinner that also reveals space for charts (non-blocking)."""
-    # Use streamlit spinner for blocking tasks or show a short friendly demo spinner
+
+# -------------------------------------------------
+# LOADING SPINNER (NON-BLOCKING)
+# -------------------------------------------------
+
+def show_loading(message="Loading…", seconds=0.4):
+    """
+    Small spinner to smooth transitions.
+    Uses ultra-short sleep for feel, not a full block.
+    """
     with st.spinner(message):
-        if seconds > 0:
-            time.sleep(seconds)  # short animated pause to let users feel loading
+        time.sleep(seconds)  # kept minimal for user-perception only
+
+
+# -------------------------------------------------
+# DARK MODE (LIGHTWEIGHT & GPU-ACCELERATED)
+# -------------------------------------------------
+
+@st.cache_resource
+def _dark_css():
+    """Cache the dark theme CSS block."""
+    return """
+    <style>
+    :root {
+        --primary-text: #e6eef8;
+        --background-light: #0f1724;
+    }
+
+    body, .main, .block-container {
+        background: var(--background-light) !important;
+        color: var(--primary-text) !important;
+    }
+
+    .metric-card {
+        background: #071029 !important;
+        color: var(--primary-text) !important;
+    }
+
+    /* Set tab panel background for dark mode */
+    .stTabs [role="tabpanel"] {
+        background: #0c1423 !important;
+    }
+    </style>
+    """
+
+@st.cache_resource
+def _light_css():
+    """Cache light theme CSS block."""
+    return """
+    <style>
+    :root {
+        --primary-text: #0f1724;
+        --background-light: #ffffff;
+    }
+
+    body, .main, .block-container {
+        background: var(--background-light) !important;
+        color: var(--primary-text) !important;
+    }
+
+    .metric-card {
+        background: #ffffff !important;
+        color: #0f1724 !important;
+    }
+    </style>
+    """
+
 
 def dark_mode_css(enable: bool):
-    """Inject a dark-mode CSS toggle by setting background/text overrides (best effort)."""
+    """Fast toggle between dark and light mode."""
     if enable:
-        css = """
-        <style>
-        .reportview-container .main { background: #0f1724; color: #e6eef8; }
-        .stApp .css-1v3fvcr { background: #0f1724; } /* Streamlit class names vary - best-effort */
-        .metric-card { background: #071029 !important; color: #e6eef8 !important; }
-        .metric-title, .metric-value { color: #e6eef8 !important; }
-        </style>
-        """
-        st.markdown(css, unsafe_allow_html=True)
+        st.markdown(_dark_css(), unsafe_allow_html=True)
     else:
-        # remove by injecting neutral style (can't truly remove earlier CSS); this sets base back to light
-        css = """
-        <style>
-        .reportview-container .main { background: #ffffff; color: #0f1724; }
-        .metric-card { background: white !important; color: #0f1724 !important; }
-        .metric-title, .metric-value { color: #0f1724 !important; }
-        </style>
-        """
-        st.markdown(css, unsafe_allow_html=True)
+        st.markdown(_light_css(), unsafe_allow_html=True)
